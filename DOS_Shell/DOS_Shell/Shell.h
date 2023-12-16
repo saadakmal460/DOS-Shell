@@ -20,7 +20,7 @@ public:
 			File(string Name)
 			{
 				name = Name;
-				extension = "txt";
+				extension = ".txt";
 			}
 		};
 
@@ -107,10 +107,61 @@ public:
 			currentDirectory = dir;
 		}
 
-		void CreateDirectory(string name)
+		string CreateDirectory(string name)
 		{
-			Directory* directory = new Directory(name, currentDirectory->path + "\\" + name, currentDirectory);
-			currentDirectory->directories.push_back(directory);
+			string finalName = name;
+			int count = 0;
+			while (true)
+			{
+				if (SearchDirectory(finalName) == nullptr)
+				{
+					Directory* directory = new Directory(finalName, currentDirectory->path + "\\" + finalName, currentDirectory);
+					currentDirectory->directories.push_back(directory);
+					return finalName;
+				}
+				count++;
+				finalName = name + "(" + to_string(count) + ")";
+			}
+		}
+
+		bool RemoveDirectory(string name)
+		{
+			Directory* directory = SearchDirectory(name);
+			if (directory != nullptr)
+			{
+				currentDirectory->directories.remove(directory);
+				DeleteFromMemory(directory);
+				return true;
+			}
+			else
+			{
+				return false;
+			}
+		}
+
+		void DeleteFromMemory(Directory* directory)
+		{
+			for (auto iter = directory->files.begin(); iter != directory->files.end(); ++iter)
+			{
+				delete *iter;
+			}
+			for (auto iter = directory->directories.begin(); iter != directory->directories.end(); ++iter)
+			{
+				DeleteFromMemory(*iter);
+			}
+			delete directory;
+		}
+
+		Directory* SearchDirectory(string name)
+		{
+			for (auto iter = currentDirectory->directories.begin(); iter != currentDirectory->directories.end(); ++iter)
+			{
+				if ((*iter)->name == name)
+				{
+					return *iter;
+				}
+			}
+			return nullptr;
 		}
 
 		void DisplayContents()
@@ -122,14 +173,25 @@ public:
 
 			for (auto iter = currentDirectory->files.begin(); iter != currentDirectory->files.end(); ++iter)
 			{
-				cout << "\t\t\t\t     \t" << (*iter)->name + "." + (*iter)->extension << endl;
+				cout << "\t\t\t\t     \t" << (*iter)->name + (*iter)->extension << endl;
 			}
 		}
 
-		void CreateFile(string name)
+		string CreateFile(string name)
 		{
-			File* file = new File(name);
-			currentDirectory->files.push_back(file);
+			string finalName = name;
+			int count = 0;
+			while (true)
+			{
+				if (SearchFile(finalName) == nullptr)
+				{
+					File* file = new File(finalName);
+					currentDirectory->files.push_back(file);
+					return finalName;
+				}
+				count++;
+				finalName = name + "(" + to_string(count) + ")";
+			}
 		}
 
 		File* SearchFile(string name)
@@ -150,7 +212,29 @@ public:
 			if (file != nullptr)
 			{
 				currentDirectory->files.remove(file);
+				delete file;
 				return true;
+			}
+			else
+			{
+				return false;
+			}
+		}
+
+		bool RenameFile(string oldName, string newName)
+		{
+			File* file = SearchFile(oldName);
+			if (file != nullptr)
+			{
+				if (SearchFile(newName) == nullptr)
+				{
+					file->name = newName;
+					return true;
+				}
+				else
+				{
+					return false;
+				}
 			}
 			else
 			{
@@ -268,8 +352,32 @@ public:
 		{
 			if (substrings.size() == 2)
 			{
-				virtualFileStructure.CreateDirectory(substrings[1]);
-				cout << "Directory Created: " << substrings[1] << endl;
+				string name = virtualFileStructure.CreateDirectory(substrings[1]);
+				cout << "Directory Created: " << name << endl;
+			}
+			else if (substrings.size() > 2)
+			{
+				cout << "Error: Too many parameters" << endl;
+			}
+			else
+			{
+				cout << "Error: This command needs a paramter" << endl;
+			}
+		}
+
+		else if ((substrings[0] == "rmdir"))
+		{
+			if (substrings.size() == 2)
+			{
+				bool isRemoved = virtualFileStructure.RemoveDirectory(substrings[1]);
+				if (isRemoved == true)
+				{
+					cout << "\"" << substrings[1] << "\" has been removed" << endl;
+				}
+				else
+				{
+					cout << "Error: The directory \"" << substrings[1] << "\" does not exist" << endl;
+				}
 			}
 			else if (substrings.size() > 2)
 			{
@@ -285,8 +393,8 @@ public:
 		{
 			if (substrings.size() == 2)
 			{
-				virtualFileStructure.CreateFile(substrings[1]);
-				cout << "File Created: " << substrings[1] << endl;
+				string name = virtualFileStructure.CreateFile(substrings[1]);
+				cout << "File Created: " << name << endl;
 			}
 			else if (substrings.size() > 2)
 			{
@@ -309,7 +417,7 @@ public:
 				}
 				else
 				{
-					cout << "No such file present" << endl;
+					cout << "\"" << substrings[1] << "\"" << ": No such file in the current directory" << endl;
 				}
 			}
 			else if (substrings.size() > 2)
@@ -321,6 +429,30 @@ public:
 				cout << "Error: This command needs a paramter" << endl;
 			}
 		}
+
+		else if ((substrings[0] == "rename"))
+		{
+			if (substrings.size() == 3)
+			{
+				bool isRenamed = virtualFileStructure.RenameFile(substrings[1], substrings[2]);
+				if (isRenamed == true)
+				{
+					cout << "\"" << substrings[1] << "\" renamed as \"" << substrings[2] << "\"" << endl;
+				}
+				else
+				{
+					cout << "Error: Either the file doesn't exist or the new name is already taken" << endl;
+				}
+			}
+			else if (substrings.size() > 3)
+			{
+				cout << "Error: Too many parameters" << endl;
+			}
+			else
+			{
+				cout << "Error: This command needs 2 paramters" << endl;
+			}
+			}
 
 		else if (command == "exit")
 		{
