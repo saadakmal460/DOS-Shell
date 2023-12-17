@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 #include "Shell.h"
 
 using namespace std;
@@ -14,10 +15,10 @@ int main()
     {
         command = "";
         newDosShell->DisplayCurrentPath();
-        cin >> command;
+        getline(cin,command);
 
         newDosShell->ExecuteCommand(command);
 
-
+        
     }
 }
